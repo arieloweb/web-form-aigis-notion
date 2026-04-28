@@ -19,16 +19,23 @@ type LeadPayload = {
   }
   
   function setCors(req: any, res: any) {
-    const allowedOrigin = process.env.ALLOWED_ORIGIN || "*";
-    const origin = req.headers.origin;
-  
-    if (allowedOrigin === "*" || origin === allowedOrigin) {
-      res.setHeader("Access-Control-Allow-Origin", allowedOrigin === "*" ? "*" : origin);
+    const origin = req.headers.origin as string | undefined;
+    const allowedOrigins = (process.env.ALLOWED_ORIGIN || "")
+      .split(",")
+      .map((o) => o.trim())
+      .filter(Boolean);
+    const allowAll = allowedOrigins.length === 0 || allowedOrigins.includes("*");
+    const isAllowed = allowAll || (origin && allowedOrigins.includes(origin));
+    if (isAllowed) {
+      res.setHeader("Access-Control-Allow-Origin", allowAll ? "*" : origin!);
+      res.setHeader("Vary", "Origin");
     }
-  
-    res.setHeader("Vary", "Origin");
     res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    res.setHeader(
+      "Access-Control-Allow-Headers",
+      "Content-Type, Authorization, X-Requested-With"
+    );
+    res.setHeader("Access-Control-Max-Age", "86400");
   }
   
   function isValidPayload(payload: any): payload is LeadPayload {
